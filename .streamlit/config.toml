@@ -1,7 +1,4 @@
 [server]
-headless = false
-address = "localhost"
-port = 4000
-
-[general]
-email = "manjeetguptaemployid@gmail.com"
+headless = true
+port = 10000  # Or leave this out and Render will set the port
+enableCORS = false
