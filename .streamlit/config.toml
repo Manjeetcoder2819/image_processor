@@ -2,3 +2,6 @@
 headless = false
 address = "localhost"
 port = 4000
+
+[general]
+email = "manjeetguptaemployid@gmail.com"
