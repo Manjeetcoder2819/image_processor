@@ -1,11 +1,15 @@
 import os
 import json
 import datetime
+from dotenv import load_dotenv  # Add this import
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import JSONB
 import pandas as pd
+
+# Load environment variables from .env file
+load_dotenv()
 
 Base = declarative_base()
 
@@ -43,15 +47,39 @@ class ShapeRecord(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class DatabaseManager:
-    def __init__(self):
+    def __init__(self, database_url=None):
         """Initialize database connection"""
-        self.database_url = os.environ.get('DATABASE_URL')
+        # Try multiple ways to get database URL
+        self.database_url = (
+            database_url or 
+            os.environ.get('DATABASE_URL') or
+            os.environ.get('DB_URL') or
+            self._get_default_database_url()
+        )
+        
         if not self.database_url:
-            raise ValueError("DATABASE_URL environment variable not found")
+            raise ValueError(
+                "Database URL not found. Please set DATABASE_URL environment variable "
+                "or provide database_url parameter. Example: "
+                "postgresql://username:password@localhost:5432/database_name"
+            )
         
         self.engine = create_engine(self.database_url)
         self.Session = sessionmaker(bind=self.engine)
         self.create_tables()
+    
+    def _get_default_database_url(self):
+        """Try to construct database URL from individual components"""
+        db_host = os.environ.get('DB_HOST', 'localhost')
+        db_port = os.environ.get('DB_PORT', '5432')
+        db_name = os.environ.get('DB_NAME')
+        db_user = os.environ.get('DB_USER')
+        db_password = os.environ.get('DB_PASSWORD')
+        
+        if all([db_name, db_user, db_password]):
+            return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        
+        return None
     
     def create_tables(self):
         """Create database tables if they don't exist"""
@@ -319,3 +347,11 @@ class DatabaseManager:
             
         finally:
             session.close()
+
+# Example usage with direct database URL
+if __name__ == "__main__":
+    # Option 1: Pass database URL directly
+    db_manager = DatabaseManager("postgresql://username:password@localhost:5432/database_name")
+    
+    # Option 2: Use environment variables (recommended)
+    # db_manager = DatabaseManager()
